@@ -109,6 +109,54 @@ body {
     border-radius: var(--border-radius-lg);
     padding: 1.5rem;
     background: white;
+    /* Fallback: ensure items are always visible */
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* Only apply animations when JavaScript is loaded */
+.js-loaded .catalog-item {
+    opacity: 1;
+    transform: none;
+}
+
+/* Fallback styles when GSAP fails to load */
+.gsap-fallback .catalog-item {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+}
+
+.gsap-fallback .catalog-item:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Emergency fallback - ensure catalog items are always visible */
+.catalog-item {
+    animation: ensureVisibility 3s forwards;
+    /* Default state - always visible */
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+@keyframes ensureVisibility {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* Force visibility class for emergency cases */
+.force-visibility .catalog-item {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Additional safety - ensure items are visible after animation */
+.catalog-item.animated {
+    opacity: 1 !important;
+    transform: none !important;
 }
 
 .catalog-item:hover {

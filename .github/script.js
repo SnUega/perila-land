@@ -278,6 +278,9 @@ function initializeApp() {
     
     // Initialize icons
     lucide.createIcons();
+    
+    // Add JS loaded class for CSS fallbacks
+    document.body.classList.add('js-loaded');
 }
 
 function setupEventListeners() {
@@ -710,6 +713,18 @@ function handleContactForm(e) {
 }
 
 function initializeAnimations() {
+    // Check if GSAP is loaded
+    if (typeof gsap === 'undefined') {
+        console.warn('GSAP not loaded, applying fallback styles');
+        return;
+    }
+
+    // Check if ScrollTrigger is available
+    if (typeof ScrollTrigger === 'undefined') {
+        console.warn('ScrollTrigger not loaded, using basic animations');
+        return;
+    }
+
     // Hero section animations
     gsap.fromTo('.hero-title', 
         { opacity: 0, y: 30 },
@@ -731,21 +746,65 @@ function initializeAnimations() {
         { opacity: 1, scale: 1, duration: 0.8, delay: 0.3, ease: 'power2.out' }
     );
     
-    // Catalog items animation
-    gsap.from('.catalog-item', {
-        opacity: 0,
-        y: 30,
-        duration: 0.6,
-        delay: 0.2,
-        stagger: 0.1,
-        ease: 'power2.out',
-        scrollTrigger: {
-            trigger: '#catalog',
-            start: 'top 80%',
-            end: 'bottom 20%',
-            toggleActions: 'play none none none'
+    // Catalog items animation with better error handling
+    try {
+        const catalogItems = document.querySelectorAll('.catalog-item');
+        if (catalogItems.length > 0) {
+            // Set initial state to prevent flickering
+            gsap.set('.catalog-item', { opacity: 0, y: 30 });
+            
+            // Wait for next tick to ensure DOM is ready
+            setTimeout(() => {
+                gsap.from('.catalog-item', {
+                    opacity: 0,
+                    y: 30,
+                    duration: 0.6,
+                    delay: 0.2,
+                    stagger: 0.1,
+                    ease: 'power2.out',
+                    scrollTrigger: {
+                        trigger: '#catalog',
+                        start: 'top 80%',
+                        end: 'bottom 20%',
+                        toggleActions: 'play none none reverse',
+                        onEnter: () => {
+                            // Ensure items are visible when entering viewport
+                            gsap.set('.catalog-item', { clearProps: 'opacity,y' });
+                        },
+                        onLeave: () => {
+                            // Keep items visible when leaving viewport
+                            gsap.set('.catalog-item', { opacity: 1, y: 0 });
+                        },
+                        onComplete: () => {
+                            // Ensure items are fully visible after animation
+                            gsap.set('.catalog-item', { opacity: 1, y: 0 });
+                            // Add class to mark as animated
+                            document.querySelectorAll('.catalog-item').forEach(item => {
+                                item.classList.add('animated');
+                            });
+                        }
+                    }
+                });
+            }, 100);
+            
+            // Additional safety check - ensure items are visible after a delay
+            setTimeout(() => {
+                gsap.set('.catalog-item', { opacity: 1, y: 0 });
+                // Add class to mark as animated
+                document.querySelectorAll('.catalog-item').forEach(item => {
+                    item.classList.add('animated');
+                });
+            }, 2000);
         }
-    });
+    } catch (error) {
+        console.error('Error initializing catalog animations:', error);
+        // Fallback: ensure items are visible
+        gsap.set('.catalog-item', { opacity: 1, y: 0 });
+        // Add class to mark as animated
+        document.querySelectorAll('.catalog-item').forEach(item => {
+            item.classList.add('animated');
+        });
+    }
     
     // Gallery animation
     gsap.from('.gallery-item', {
@@ -792,6 +851,29 @@ function initializeAnimations() {
     });
 }
 
+// Function to disable problematic animations and force visibility
+function forceCatalogItemsVisibility() {
+    console.log('Forcing catalog items visibility');
+    
+    // Kill all GSAP animations on catalog items
+    if (typeof gsap !== 'undefined') {
+        gsap.killTweensOf('.catalog-item');
+        gsap.set('.catalog-item', { 
+            opacity: 1, 
+            y: 0,
+            clearProps: 'all'
+        });
+    }
+    
+    // Add CSS class to force visibility
+    document.body.classList.add('force-visibility');
+    
+    // Add animated class to all catalog items
+    document.querySelectorAll('.catalog-item').forEach(item => {
+        item.classList.add('animated');
+    });
+}
+
 // Export for potential use in other scripts
 window.INOXMaster = {
     switchLanguage,
@@ -800,5 +882,6 @@ window.INOXMaster = {
     closeImageModal,
     texts,
     photos,
-    tags
+    tags,
+    forceCatalogItemsVisibility
 };
